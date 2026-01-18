@@ -17,6 +17,11 @@ public class PresenceConfig {
         ALL, GUNS_ONLY, OFF
     }
 
+    public enum HudType {
+        TACZ_HUD, // Original TACZ HUD
+        TACZ_P_HUD // Custom immersive HUD from this mod
+    }
+
     // Static accessors for convenience (matching reference code style)
     public static ForgeConfigSpec.DoubleValue VIGNETTE_DECAY_RATE;
     public static ForgeConfigSpec.BooleanValue ENABLE_SUPER_HIT_SOUND;
@@ -26,6 +31,9 @@ public class PresenceConfig {
     public static ForgeConfigSpec.DoubleValue PULSE_SHAKE_MULTIPLIER;
     public static ForgeConfigSpec.EnumValue<Mode> DAMAGE_OVERLAY_MODE;
     public static ForgeConfigSpec.DoubleValue VIGNETTE_MAX_ALPHA;
+
+    // Gun HUD Config
+    public static ForgeConfigSpec.EnumValue<HudType> GUN_HUD_TYPE;
 
     public static ForgeConfigSpec.BooleanValue ENABLE_DAMAGE_INDICATOR;
     public static ForgeConfigSpec.DoubleValue DAMAGE_INDICATOR_RADIUS;
@@ -99,6 +107,10 @@ public class PresenceConfig {
 
             builder.push("hud");
             builder.translation("config.tacz_presence.hud");
+
+            builder.comment("Gun HUD style: TACZ_HUD (original), TACZ_P_HUD (custom immersive)");
+            builder.translation("config.tacz_presence.gun_hud_type");
+            GUN_HUD_TYPE = builder.defineEnum("GunHudType", HudType.TACZ_P_HUD);
 
             builder.comment("Enable damage direction indicator");
             builder.translation("config.tacz_presence.enable_damage_indicator");
