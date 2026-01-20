@@ -65,8 +65,11 @@ public class PresenceConfig {
     public static ForgeConfigSpec.DoubleValue GLARE_SCALE_MID;
     public static ForgeConfigSpec.DoubleValue GLARE_SCALE_FAR;
     public static ForgeConfigSpec.DoubleValue GLARE_VIEW_ANGLE;
-    public static ForgeConfigSpec.DoubleValue GLARE_HORIZONTAL_STRETCH;
-    public static ForgeConfigSpec.DoubleValue GLARE_OPACITY;
+    // Weather-based opacity configs
+    public static ForgeConfigSpec.DoubleValue GLARE_OPACITY_DAY;
+    public static ForgeConfigSpec.DoubleValue GLARE_OPACITY_NIGHT;
+    public static ForgeConfigSpec.DoubleValue GLARE_OPACITY_RAIN;
+    public static ForgeConfigSpec.DoubleValue GLARE_OPACITY_NIGHT_RAIN;
 
     public static class Client {
         public Client(ForgeConfigSpec.Builder builder) {
@@ -190,17 +193,17 @@ public class PresenceConfig {
             builder.translation("config.tacz_presence.glare_enabled");
             GLARE_ENABLED = builder.define("EnableSniperGlare", true);
 
-            builder.comment("Minimum scope zoom level to be considered a sniper scope (e.g., 3.0 for 3x zoom)");
+            builder.comment("Minimum scope zoom level to be considered a sniper scope (e.g., 4.0 for 4x zoom)");
             builder.translation("config.tacz_presence.glare_min_zoom");
-            GLARE_MIN_ZOOM = builder.defineInRange("MinZoomLevel", 3.0D, 1.0D, 20.0D);
+            GLARE_MIN_ZOOM = builder.defineInRange("MinZoomLevel", 4.0D, 1.0D, 20.0D);
 
             builder.comment("Minimum distance (blocks) to see the glare");
             builder.translation("config.tacz_presence.glare_min_distance");
-            GLARE_MIN_DISTANCE = builder.defineInRange("MinDistance", 10.0D, 1.0D, 100.0D);
+            GLARE_MIN_DISTANCE = builder.defineInRange("MinDistance", 5.0D, 1.0D, 100.0D);
 
             builder.comment("Base glare size in blocks");
             builder.translation("config.tacz_presence.glare_base_size");
-            GLARE_BASE_SIZE = builder.defineInRange("BaseSize", 4.0D, 0.5D, 20.0D);
+            GLARE_BASE_SIZE = builder.defineInRange("BaseSize", 3.0D, 0.5D, 20.0D);
 
             builder.comment("Size scale when close (at minimum distance)");
             builder.translation("config.tacz_presence.glare_scale_close");
@@ -208,23 +211,27 @@ public class PresenceConfig {
 
             builder.comment("Size scale at medium distance (50 blocks)");
             builder.translation("config.tacz_presence.glare_scale_mid");
-            GLARE_SCALE_MID = builder.defineInRange("ScaleMid", 1.5D, 0.1D, 5.0D);
+            GLARE_SCALE_MID = builder.defineInRange("ScaleMid", 1.0D, 0.1D, 5.0D);
 
             builder.comment("Size scale when far (100+ blocks)");
             builder.translation("config.tacz_presence.glare_scale_far");
-            GLARE_SCALE_FAR = builder.defineInRange("ScaleFar", 3.0D, 0.1D, 10.0D);
+            GLARE_SCALE_FAR = builder.defineInRange("ScaleFar", 1.6D, 0.1D, 10.0D);
 
             builder.comment("Viewing angle (degrees) from sniper's aim direction to see glare");
             builder.translation("config.tacz_presence.glare_view_angle");
             GLARE_VIEW_ANGLE = builder.defineInRange("ViewAngle", 45.0D, 10.0D, 180.0D);
 
-            builder.comment("Horizontal stretch factor (1.0 = square, >1.0 = wider)");
-            builder.translation("config.tacz_presence.glare_horizontal_stretch");
-            GLARE_HORIZONTAL_STRETCH = builder.defineInRange("HorizontalStretch", 1.0D, 0.5D, 5.0D);
+            builder.comment("Glare opacity during clear day (0.0-1.0)");
+            GLARE_OPACITY_DAY = builder.defineInRange("OpacityDay", 1.0D, 0.0D, 1.0D);
 
-            builder.comment("Glare opacity/intensity (0.0 = invisible, 1.0 = full)");
-            builder.translation("config.tacz_presence.glare_opacity");
-            GLARE_OPACITY = builder.defineInRange("Opacity", 1.0D, 0.0D, 1.0D);
+            builder.comment("Glare opacity during clear night (0.0-1.0)");
+            GLARE_OPACITY_NIGHT = builder.defineInRange("OpacityNight", 0.8D, 0.0D, 1.0D);
+
+            builder.comment("Glare opacity during rain (0.0-1.0)");
+            GLARE_OPACITY_RAIN = builder.defineInRange("OpacityRain", 0.65D, 0.0D, 1.0D);
+
+            builder.comment("Glare opacity during night + rain (0.0-1.0)");
+            GLARE_OPACITY_NIGHT_RAIN = builder.defineInRange("OpacityNightRain", 0.5D, 0.0D, 1.0D);
 
             builder.pop();
 

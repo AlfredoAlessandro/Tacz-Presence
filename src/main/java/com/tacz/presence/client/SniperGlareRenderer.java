@@ -23,15 +23,24 @@ import java.util.UUID;
 
 /**
  * Renders the sniper glare effect for players aiming with high-zoom scopes.
- * The glare appears in front of the sniper (at their scope) in the direction
- * they're looking.
- * All values are configurable via PresenceConfig.
+ * Uses weather-based texture selection:
+ * - Day/Sunny: glare_3.png (bright)
+ * - Rain: glare_2.png (faint)
+ * - Night: glare.png (dim)
  */
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = "tacz_presence")
 public class SniperGlareRenderer {
 
-    private static final ResourceLocation GLARE_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    // Weather-based textures
+    private static final ResourceLocation GLARE_NIGHT = ResourceLocation.fromNamespaceAndPath(
             "tacz_presence", "textures/shared/glare.png");
+    private static final ResourceLocation GLARE_RAIN = ResourceLocation.fromNamespaceAndPath(
+            "tacz_presence", "textures/shared/glare_2.png");
+    private static final ResourceLocation GLARE_DAY = ResourceLocation.fromNamespaceAndPath(
+            "tacz_presence", "textures/shared/glare_3.png");
+
+    // Texture aspect ratios (width:height) - 2:1 makes glare wider
+    private static final float TEXTURE_ASPECT_RATIO = 2.0f;
 
     // Fixed constants
     private static final float EYE_HEIGHT = 1.6f;
@@ -71,6 +80,15 @@ public class SniperGlareRenderer {
         double minDistance = PresenceConfig.GLARE_MIN_DISTANCE.get();
         double viewAngle = PresenceConfig.GLARE_VIEW_ANGLE.get();
 
+        // Determine weather conditions once per frame
+        boolean isRaining = mc.level.isRaining();
+        long dayTime = mc.level.getDayTime() % 24000;
+        boolean isNight = dayTime > 13000 && dayTime < 23000;
+
+        // Select texture and opacity based on weather
+        ResourceLocation activeTexture = getActiveTexture(isRaining, isNight);
+        float weatherOpacity = getWeatherOpacity(isRaining, isNight);
+
         for (Map.Entry<UUID, Vec3> entry : aimingPlayers.entrySet()) {
             UUID playerId = entry.getKey();
             Vec3 sniperLookDir = entry.getValue();
@@ -80,8 +98,18 @@ public class SniperGlareRenderer {
                 continue;
             }
 
+            // IMPORTANT: Check if target player still exists (fixes death sync bug)
             Player targetPlayer = mc.level.getPlayerByUUID(playerId);
             if (targetPlayer == null) {
+                // Player no longer exists (died, disconnected, etc.)
+                // Clean up the data
+                SniperGlareClientData.removeAimingPlayer(playerId);
+                continue;
+            }
+
+            // Also check if player is alive
+            if (!targetPlayer.isAlive()) {
+                SniperGlareClientData.removeAimingPlayer(playerId);
                 continue;
             }
 
@@ -114,7 +142,38 @@ public class SniperGlareRenderer {
                 continue;
             }
 
-            renderGlare(event.getPoseStack(), glarePos, cameraPos, distance);
+            renderGlare(event.getPoseStack(), glarePos, cameraPos, distance, activeTexture, weatherOpacity);
+        }
+    }
+
+    /**
+     * Select texture based on weather conditions.
+     */
+    private static ResourceLocation getActiveTexture(boolean isRaining, boolean isNight) {
+        if (isRaining) {
+            // Rain always uses glare_2 (works for both day and night rain)
+            return GLARE_RAIN;
+        } else if (isNight) {
+            // Clear night uses glare.png
+            return GLARE_NIGHT;
+        } else {
+            // Clear day uses glare_3 (brightest)
+            return GLARE_DAY;
+        }
+    }
+
+    /**
+     * Calculate opacity based on weather conditions using config values.
+     */
+    private static float getWeatherOpacity(boolean isRaining, boolean isNight) {
+        if (isRaining && isNight) {
+            return PresenceConfig.GLARE_OPACITY_NIGHT_RAIN.get().floatValue();
+        } else if (isRaining) {
+            return PresenceConfig.GLARE_OPACITY_RAIN.get().floatValue();
+        } else if (isNight) {
+            return PresenceConfig.GLARE_OPACITY_NIGHT.get().floatValue();
+        } else {
+            return PresenceConfig.GLARE_OPACITY_DAY.get().floatValue();
         }
     }
 
@@ -154,7 +213,8 @@ public class SniperGlareRenderer {
         return dot > threshold;
     }
 
-    private static void renderGlare(PoseStack poseStack, Vec3 glarePos, Vec3 cameraPos, double distance) {
+    private static void renderGlare(PoseStack poseStack, Vec3 glarePos, Vec3 cameraPos, double distance,
+            ResourceLocation texture, float weatherOpacity) {
         double x = glarePos.x - cameraPos.x;
         double y = glarePos.y - cameraPos.y;
         double z = glarePos.z - cameraPos.z;
@@ -165,19 +225,14 @@ public class SniperGlareRenderer {
         float scaleMid = PresenceConfig.GLARE_SCALE_MID.get().floatValue();
         float scaleFar = PresenceConfig.GLARE_SCALE_FAR.get().floatValue();
         float baseSize = PresenceConfig.GLARE_BASE_SIZE.get().floatValue();
-        float horizontalStretch = PresenceConfig.GLARE_HORIZONTAL_STRETCH.get().floatValue();
 
         // Scale: SMALL when close, LARGE when far
-        // Uses config values for scaleClose, scaleMid, scaleFar
         float distanceScale;
         if (distance < 50.0) {
-            // Linear growth from scaleClose at minDistance to scaleMid at 50 blocks
             double range = 50.0 - minDistance;
             distanceScale = (float) (scaleClose + (scaleMid - scaleClose) * ((distance - minDistance) / range));
             distanceScale = Math.max(scaleClose, distanceScale);
         } else {
-            // Continue growing from scaleMid at 50 blocks to scaleFar at 100 blocks, then
-            // cap
             distanceScale = (float) (scaleMid + (scaleFar - scaleMid) * ((distance - 50.0) / 50.0));
             distanceScale = Math.min(scaleFar, distanceScale);
         }
@@ -198,30 +253,25 @@ public class SniperGlareRenderer {
 
         Matrix4f matrix = poseStack.last().pose();
 
-        // Apply stretch from config
-        float halfWidth = (size * horizontalStretch) / 2.0f;
+        // Apply texture aspect ratio (2:1 = wider than tall)
+        float halfWidth = (size * TEXTURE_ASPECT_RATIO) / 2.0f;
         float halfHeight = size / 2.0f;
 
-        // Render setup - WITH depth test so glare hides behind blocks
+        // Render setup - standard alpha blend for proper PNG transparency
         RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(
-                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE,
-                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.ONE,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ZERO);
+        RenderSystem.defaultBlendFunc(); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
         RenderSystem.disableCull();
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
 
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, GLARE_TEXTURE);
+        RenderSystem.setShaderTexture(0, texture);
 
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
 
-        // Apply opacity from config
-        float opacity = PresenceConfig.GLARE_OPACITY.get().floatValue();
-        int alpha = (int) (pulse * opacity * 255);
+        // Apply weather-based opacity (replaces config opacity)
+        int alpha = (int) (pulse * weatherOpacity * 255);
 
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         buffer.vertex(matrix, -halfWidth, -halfHeight, 0).uv(0, 1).color(255, 255, 255, alpha).endVertex();
