@@ -82,7 +82,7 @@ public class DamageIndicatorOverlay implements IGuiOverlay {
 
     @Override
     public void render(ForgeGui gui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
-        if (!PresenceConfig.ENABLE_DAMAGE_INDICATOR.get())
+        if (PresenceConfig.DAMAGE_INDICATOR_MODE.get() == PresenceConfig.Mode.OFF)
             return;
         if (indicators.isEmpty())
             return;

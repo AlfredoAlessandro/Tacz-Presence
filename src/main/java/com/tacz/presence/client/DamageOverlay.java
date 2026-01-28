@@ -35,8 +35,7 @@ public class DamageOverlay implements IGuiOverlay {
         if (alpha <= 0.01f && displayAlpha <= 0.01f)
             return;
 
-        float maxAlpha = PresenceConfig.VIGNETTE_MAX_ALPHA.get().floatValue();
-        float target = Math.min(alpha, maxAlpha);
+        float target = alpha;
 
         if (target > displayAlpha) {
             // Cuando recibe daño, aumentar rápidamente
@@ -64,35 +63,32 @@ public class DamageOverlay implements IGuiOverlay {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
 
-        // Calcular alpha visual para el desvanecimiento gradual (efecto de curación)
-        // Usamos una curva suave para que se sienta más natural
-        float visualAlpha = (float) Math.pow(displayAlpha, 0.7); // Curva para fade más suave
+        // Opacidad global desde la configuración
+        float globalOpacity = PresenceConfig.DAMAGE_OVERLAY_OPACITY.get().floatValue();
 
-        // Renderizar texturas con opacidad basada en displayAlpha para efecto de
-        // desvanecimiento
+        // Calcular alpha visual para el desvanecimiento gradual (efecto de curación)
+        float visualAlpha = (float) Math.pow(displayAlpha, 0.7) * globalOpacity;
+
+        // Renderizar texturas con opacidad basada en displayAlpha
         if (displayAlpha > 0.01f) {
-            // Primera capa siempre visible mientras haya displayAlpha
             float layer1Alpha = Math.min(1.0f, visualAlpha * 1.5f);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, layer1Alpha);
             guiGraphics.blit(OVERLAY_1, 0, 0, 0, 0, screenWidth, screenHeight, screenWidth, screenHeight);
         }
 
         if (displayAlpha > 0.25f) {
-            // Segunda capa aparece gradualmente
             float layer2Alpha = Math.min(1.0f, (displayAlpha - 0.25f) * 2.0f) * visualAlpha;
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, layer2Alpha);
             guiGraphics.blit(OVERLAY_2, 0, 0, 0, 0, screenWidth, screenHeight, screenWidth, screenHeight);
         }
 
         if (displayAlpha > 0.5f) {
-            // Tercera capa para daño más alto
             float layer3Alpha = Math.min(1.0f, (displayAlpha - 0.5f) * 2.5f) * visualAlpha;
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, layer3Alpha);
             guiGraphics.blit(OVERLAY_3, 0, 0, 0, 0, screenWidth, screenHeight, screenWidth, screenHeight);
         }
 
         if (displayAlpha > 0.75f) {
-            // Cuarta capa solo para daño crítico
             float layer4Alpha = Math.min(1.0f, (displayAlpha - 0.75f) * 4.0f) * visualAlpha;
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, layer4Alpha);
             guiGraphics.blit(OVERLAY_4, 0, 0, 0, 0, screenWidth, screenHeight, screenWidth, screenHeight);

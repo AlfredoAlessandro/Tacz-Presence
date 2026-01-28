@@ -139,12 +139,12 @@ public class PresenceHandler {
 
                 if (actualDamage >= 20.0f) {
                     if (PresenceConfig.ENABLE_SUPER_HIT_SOUND.get()) {
-                        player.playSound(SoundEvent.createVariableRangeEvent(TARGET_SUPERHIT_ID), 1.0f,
+                        player.playSound(SoundEvent.createVariableRangeEvent(TARGET_SUPERHIT_ID), 0.8f,
                                 0.9f + (float) Math.random() * 0.1f);
                     }
                 } else {
                     if (PresenceConfig.ENABLE_HIT_SOUND.get()) {
-                        player.playSound(SoundEvent.createVariableRangeEvent(TARGET_HIT_ID), 1.0f,
+                        player.playSound(SoundEvent.createVariableRangeEvent(TARGET_HIT_ID), 0.5f,
                                 0.9f + (float) Math.random() * 0.2f);
                     }
                 }
@@ -169,7 +169,7 @@ public class PresenceHandler {
                     intensity *= 0.3f;
                 }
 
-                vignetteAlpha = Math.min(PresenceConfig.VIGNETTE_MAX_ALPHA.get().floatValue(),
+                vignetteAlpha = Math.min(1.0f,
                         vignetteAlpha + intensity);
 
                 float healthFactor = 1.0f - (player.getHealth() / player.getMaxHealth());
