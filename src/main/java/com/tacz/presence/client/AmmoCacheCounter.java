@@ -10,12 +10,17 @@ import com.tacz.presence.compat.curios_for_ammo_box.CuriosForAmmoBoxCompat;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.util.Lazy;
+import net.minecraftforge.fml.ModList;
 
 public class AmmoCacheCounter {
     private static long checkAmmoTimestamp = -1L;
     private static int cacheInventoryAmmoCount = 0;
     private static int cacheMaxAmmoCount = 0;
     private static final int MAX_AMMO_COUNT = 9999;
+
+    // Check if Curios For Ammo Box mod is loaded, to include ammo in curios slots in the count
+    private static final Lazy<Boolean> isCuriosForAmmoBoxLoaded = Lazy.of(() -> ModList.get().isLoaded("curios_for_ammo_box"));
 
     public static int getCacheInventoryAmmoCount() {
         return cacheInventoryAmmoCount;
@@ -51,7 +56,7 @@ public class AmmoCacheCounter {
 
     private static void handleInventoryAmmo(ItemStack stack, Inventory inventory) {
         // Compat with Curios For Ammo Box mod, if loaded, to count ammo in curios slots as well
-        if(CuriosForAmmoBoxCompat.isLoaded()) {
+        if(isCuriosForAmmoBoxLoaded.get()) {
             inventory = CuriosForAmmoBoxCompat.transformToCuriosInventory(inventory);
         }
 
