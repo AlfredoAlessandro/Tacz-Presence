@@ -173,7 +173,7 @@ dependencies {
     implementation fg.deobf("curse.maven:embeddium-908741:5681725")
     implementation fg.deobf("curse.maven:configured-457570:5180900")
 
-    compileOnly fg.deobf("curse.maven:curios_for_ammo_box-1339813:7529170")
+    implementation fg.deobf("curse.maven:curios_for_ammo_box-1339813:7529170")
 
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
